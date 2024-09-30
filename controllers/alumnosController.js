@@ -1,24 +1,20 @@
 const db = require('../config/db');
 
-// Obtener todos los alumnos
-exports.obtenerAlumnos = (req, res) => {
+exports.obtenerAlumnos = (req, res, next) => {
+    console.log('obtenerAlumnos function called');
     db.query('SELECT * FROM alumnos', (err, results) => {
-        if (err) return res.status(500).send('Error al obtener alumnos');
-        res.json(results);
+    if (err) {
+        console.error('Database query error:', err);
+        return next(err);
+    }
+    console.log('Query results:', results);
+    if (results.length === 0) {
+        return res.status(404).json({ message: 'No hay alumnos registrados' });
+    }
+    res.json(results);
     });
 };
 
-// Obtener un alumno por ID
-exports.obtenerAlumnoPorId = (req, res) => {
-    const alumnoId = req.params.id;
-    db.query('SELECT * FROM alumnos WHERE id = ?', [alumnoId], (err, results) => {
-        if (err) return res.status(500).send('Error al obtener alumno');
-        if (results.length === 0) return res.status(404).send('Alumno no encontrado');
-        res.json(results[0]);
-    });
-};
-
-// Crear un alumno (ya existente)
 exports.crearAlumno = (req, res) => {
     const { nombre } = req.body;
     db.query('INSERT INTO alumnos (nombre) VALUES (?)', [nombre], (err, result) => {
@@ -27,7 +23,6 @@ exports.crearAlumno = (req, res) => {
     });
 };
 
-// Obtener calificaciones de un alumno (ya existente)
 exports.obtenerCalificaciones = (req, res) => {
     const alumnoId = req.params.id;
     db.query(`

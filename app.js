@@ -4,6 +4,7 @@ const carrerasRoutes = require('./routes/carreras');
 const gruposRoutes = require('./routes/grupos');
 const alumnosRoutes = require('./routes/alumnos');
 const profesoresRoutes = require('./routes/profesores');
+const calificacionesRoutes = require('./routes/calificaciones'); 
 
 // Middleware
 app.use(express.json());
@@ -13,6 +14,12 @@ app.use('/api/carreras', carrerasRoutes);
 app.use('/api/grupos', gruposRoutes);
 app.use('/api/alumnos', alumnosRoutes);
 app.use('/api/profesores', profesoresRoutes);
+app.use('/api/calificaciones', calificacionesRoutes); 
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Algo salió mal!');
+});
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5500;
