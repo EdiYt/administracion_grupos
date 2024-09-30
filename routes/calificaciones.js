@@ -8,7 +8,4 @@ router.post('/grupo/:grupoId/alumno/:alumnoId', calificacionesController.registr
 // Obtener calificaciones de un alumno específico
 router.get('/alumno/:alumnoId', calificacionesController.obtenerCalificacionesPorAlumno);
 
-// Obtener calificaciones de todos los alumnos de un grupo
-router.get('/grupo/:grupoId', calificacionesController.obtenerCalificacionesPorGrupo);
-
 module.exports = router;

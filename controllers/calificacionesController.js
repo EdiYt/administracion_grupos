@@ -31,18 +31,3 @@ exports.obtenerCalificacionesPorAlumno = (req, res) => {
         res.json(results);
     });
 };
-
-// Obtener las calificaciones de todos los alumnos de un grupo
-exports.obtenerCalificacionesPorGrupo = (req, res) => {
-    const grupoId = req.params.grupoId;
-
-    db.query(`
-        SELECT calificaciones.*, alumnos.nombre AS alumnoNombre
-        FROM calificaciones
-        JOIN alumnos ON calificaciones.alumno_id = alumnos.id
-        WHERE calificaciones.grupo_id = ?
-    `, [grupoId], (err, results) => {
-        if (err) return res.status(500).send('Error al obtener calificaciones');
-        res.json(results);
-    });
-};
