@@ -17,16 +17,21 @@ exports.obtenerGrupos = (req, res) => {
 };
 
 exports.crearGrupo = (req, res) => {
-    console.log('Función crearGrupo llamada');
     const { nombre, periodo, carrera_id, profesor } = req.body;
-    console.log('Datos recibidos:', { nombre, periodo, carrera_id, profesor });
-    db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
-        [nombre, periodo, carrera_id, profesor], (err, result) => {
-        if (err) {
-            console.error('Error al crear grupo:', err);
-            return res.status(500).json({ error: 'Error al crear grupo', details: err.message });
+
+    // Verifica si el grupo ya existe
+    db.query('SELECT * FROM grupos WHERE nombre = ?', [nombre], (err, results) => {
+        if (err) return res.status(500).send('Error al verificar el grupo');
+
+        if (results.length > 0) {
+            return res.status(400).send('El grupo ya está registrado');
         }
-        console.log('Grupo creado exitosamente');
-        res.send('Grupo creado exitosamente');
+
+        // Insertar grupo si no existe
+        db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
+            [nombre, periodo, carrera_id, profesor], (err, result) => {
+            if (err) return res.status(500).send('Error al crear grupo');
+            res.send('Grupo creado exitosamente');
+        });
     });
 };

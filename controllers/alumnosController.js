@@ -17,11 +17,24 @@ exports.obtenerAlumnos = (req, res, next) => {
 
 exports.crearAlumno = (req, res) => {
     const { nombre } = req.body;
-    db.query('INSERT INTO alumnos (nombre) VALUES (?)', [nombre], (err, result) => {
-        if (err) return res.status(500).send('Error al crear alumno');
-        res.send('Alumno creado exitosamente');
+
+    // Primero verifica si el nombre del alumno ya existe
+    db.query('SELECT * FROM alumnos WHERE nombre = ?', [nombre], (err, results) => {
+        if (err) return res.status(500).send('Error al verificar el alumno');
+        
+        // Si existe un alumno con el mismo nombre
+        if (results.length > 0) {
+            return res.status(400).send('El alumno ya está registrado');
+        }
+
+        // Si no existe, insertar el nuevo alumno
+        db.query('INSERT INTO alumnos (nombre) VALUES (?)', [nombre], (err, result) => {
+            if (err) return res.status(500).send('Error al crear alumno');
+            res.send('Alumno creado exitosamente');
+        });
     });
 };
+
 
 exports.obtenerCalificaciones = (req, res) => {
     const alumnoId = req.params.id;
