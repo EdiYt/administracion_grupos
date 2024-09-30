@@ -1,23 +1,16 @@
 const db = require('../config/db');
 
 exports.obtenerGruposAsignados = (req, res) => {
+    console.log('Función obtenerGruposAsignados llamada');
     const profesor = req.params.nombre;
+    console.log('Nombre del profesor:', profesor);
+    
     db.query('SELECT * FROM grupos WHERE profesor = ?', [profesor], (err, results) => {
-        if (err) return res.status(500).send('Error en la consulta');
+        if (err) {
+            console.error('Error en la consulta:', err);
+            return res.status(500).json({ error: 'Error en la consulta', details: err.message });
+        }
+        console.log('Resultados de la consulta:', results);
         res.json(results);
-    });
-};
-
-exports.actualizarCalificaciones = (req, res) => {
-    const { primerParcial, segundoParcial, tercerParcial } = req.body;
-    const { grupoId, alumnoId } = req.params;
-
-    db.query(`
-        UPDATE calificaciones
-        SET primerParcial = ?, segundoParcial = ?, tercerParcial = ?
-        WHERE grupo_id = ? AND alumno_id = ?
-    `, [primerParcial, segundoParcial, tercerParcial, grupoId, alumnoId], (err, result) => {
-        if (err) return res.status(500).send('Error al actualizar calificaciones');
-        res.send('Calificaciones actualizadas exitosamente');
     });
 };
