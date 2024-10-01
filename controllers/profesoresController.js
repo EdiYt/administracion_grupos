@@ -31,3 +31,32 @@ exports.obtenerAlumnosDeProfesor = (req, res) => {
         res.json(results);
     });
 };
+
+// Registrar calificaciones 
+exports.registrarCalificaciones = (req, res) => {
+    const { alumno_id, grupo_id, primerParcial, segundoParcial, tercerParcial } = req.body;
+
+    db.query(
+        'INSERT INTO calificaciones (alumno_id, grupo_id, primerParcial, segundoParcial, tercerParcial) VALUES (?, ?, ?, ?, ?)', 
+        [alumno_id, grupo_id, primerParcial, segundoParcial, tercerParcial],
+        (err, result) => {
+            if (err) return res.status(500).send('Error al registrar calificaciones');
+            res.send('Calificaciones registradas exitosamente');
+        }
+    );
+};
+
+// Actualizar calificaciones
+exports.actualizarCalificaciones = (req, res) => {
+    const { alumno_id, grupo_id, primerParcial, segundoParcial, tercerParcial } = req.body;
+
+    db.query(
+        'UPDATE calificaciones SET primerParcial = ?, segundoParcial = ?, tercerParcial = ? WHERE alumno_id = ? AND grupo_id = ?', 
+        [primerParcial, segundoParcial, tercerParcial, alumno_id, grupo_id],
+        (err, result) => {
+            if (err) return res.status(500).send('Error al actualizar calificaciones');
+            if (result.affectedRows === 0) return res.status(404).send('No se encontraron calificaciones para actualizar');
+            res.send('Calificaciones actualizadas exitosamente');
+        }
+    );
+};
