@@ -2,18 +2,51 @@ const db = require('../config/db');
 const axios = require('axios');
 
 exports.obtenerGrupos = (req, res) => {
-    console.log('Función obtenerGrupos llamada');
     db.query(`
-        SELECT grupos.*, carreras.nombre AS carreraNombre
-        FROM grupos
-        JOIN carreras ON grupos.carrera_id = carreras.id
+        SELECT g.id AS grupoId, g.nombre AS grupoNombre, g.periodo, g.profesor, 
+               c.nombre AS carreraNombre, 
+               a.id AS alumnoId, a.nombre AS alumnoNombre
+        FROM grupos g
+        JOIN carreras c ON g.carrera_id = c.id
+        LEFT JOIN grupo_alumnos ga ON g.id = ga.grupo_id
+        LEFT JOIN alumnos a ON ga.alumno_id = a.id
     `, (err, results) => {
         if (err) {
-            console.error('Error en la consulta:', err);
-            return res.status(500).json({ error: 'Error en la consulta', details: err.message });
+            console.error('Error en la consulta de grupos y alumnos:', err);
+            return res.status(500).send('Error en la consulta');
         }
-        console.log('Resultados de la consulta:', results);
-        res.json(results);
+
+        // Organizar los resultados en un formato más adecuado
+        const grupos = {};
+
+        results.forEach(row => {
+            const { grupoId, grupoNombre, periodo, profesor, carreraNombre, alumnoId, alumnoNombre } = row;
+
+            // Si el grupo no ha sido agregado todavía
+            if (!grupos[grupoId]) {
+                grupos[grupoId] = {
+                    id: grupoId,
+                    nombre: grupoNombre,
+                    periodo,
+                    profesor,
+                    carrera: carreraNombre,
+                    alumnos: []
+                };
+            }
+
+            // Si hay un alumno, agregarlo a la lista de alumnos del grupo
+            if (alumnoId) {
+                grupos[grupoId].alumnos.push({
+                    id: alumnoId,
+                    nombre: alumnoNombre
+                });
+            }
+        });
+
+        // Convertir el objeto a un array
+        const gruposArray = Object.values(grupos);
+
+        res.json(gruposArray);
     });
 };
 
