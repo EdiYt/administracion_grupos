@@ -17,21 +17,33 @@ exports.obtenerGrupos = (req, res) => {
 };
 
 exports.crearGrupo = (req, res) => {
-    const { nombre, periodo, carrera_id, profesor } = req.body;
+    const { nombre, periodo, carrera_id, profesor, alumnos } = req.body;
 
-    // Verifica si el grupo ya existe
-    db.query('SELECT * FROM grupos WHERE nombre = ?', [nombre], (err, results) => {
-        if (err) return res.status(500).send('Error al verificar el grupo');
+    db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
+        [nombre, periodo, carrera_id, profesor], (err, result) => {
+        if (err) return res.status(500).send('Error al crear grupo');
 
-        if (results.length > 0) {
-            return res.status(400).send('El grupo ya está registrado');
-        }
+        const grupoId = result.insertId;
 
-        // Insertar grupo si no existe
-        db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
-            [nombre, periodo, carrera_id, profesor], (err, result) => {
-            if (err) return res.status(500).send('Error al crear grupo');
-            res.send('Grupo creado exitosamente');
+        // Inserta la lista de alumnos en el grupo
+        const values = alumnos.map(alumnoId => [grupoId, alumnoId]);
+        db.query('INSERT INTO grupo_alumnos (grupo_id, alumno_id) VALUES ?', [values], (err, result) => {
+            if (err) return res.status(500).send('Error al asignar alumnos al grupo');
+            res.send('Grupo creado y alumnos asignados exitosamente');
         });
+    });
+};
+
+exports.obtenerAlumnosDeGrupo = (req, res) => {
+    const grupoId = req.params.grupoId;
+
+    db.query(`
+        SELECT alumnos.nombre
+        FROM grupo_alumnos
+        JOIN alumnos ON grupo_alumnos.alumno_id = alumnos.id
+        WHERE grupo_alumnos.grupo_id = ?
+    `, [grupoId], (err, results) => {
+        if (err) return res.status(500).send('Error al obtener alumnos del grupo');
+        res.json(results);
     });
 };
