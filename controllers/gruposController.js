@@ -16,13 +16,11 @@ exports.obtenerGrupos = (req, res) => {
             return res.status(500).send('Error en la consulta');
         }
 
-        // Organizar los resultados en un formato más adecuado
         const grupos = {};
 
         results.forEach(row => {
             const { grupoId, grupoNombre, periodo, profesor, carreraNombre, alumnoId, alumnoNombre } = row;
 
-            // Si el grupo no ha sido agregado todavía
             if (!grupos[grupoId]) {
                 grupos[grupoId] = {
                     id: grupoId,
@@ -34,7 +32,6 @@ exports.obtenerGrupos = (req, res) => {
                 };
             }
 
-            // Si hay un alumno, agregarlo a la lista de alumnos del grupo
             if (alumnoId) {
                 grupos[grupoId].alumnos.push({
                     id: alumnoId,
@@ -43,54 +40,53 @@ exports.obtenerGrupos = (req, res) => {
             }
         });
 
-        // Convertir el objeto a un array
         const gruposArray = Object.values(grupos);
 
         res.json(gruposArray);
     });
 };
 
-// Crear un grupo y obtener la lista de estudiantes desde la API de Oscar
-exports.crearGrupo = async (req, res) => {
+exports.crearGrupo = (req, res) => {
     const { nombre, periodo, carrera_id, profesor } = req.body;
 
-    try {
-        // Solicitud hacia la api
-        const response = await axios.get('http://localhost:3001/usuario/obtenerEstudiantes/');
-        const estudiantes = response.data;
+    axios.get('http://localhost:3001/usuario/obtenerEstudiantes/')
+        .then(response => {
+            const estudiantes = response.data;
 
-        // Insertar el grupo en la base de datos
-        db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
-            [nombre, periodo, carrera_id, profesor], (err, result) => {
-            if (err) return res.status(500).send('Error al crear grupo');
-            
-            const grupoId = result.insertId;
+            db.query('INSERT INTO grupos (nombre, periodo, carrera_id, profesor) VALUES (?, ?, ?, ?)', 
+                [nombre, periodo, carrera_id, profesor], (err, result) => {
+                if (err) {
+                    return res.status(500).send('Error al crear grupo');
+                }
 
-            // Ahora asignar los estudiantes al grupo
-            estudiantes.forEach((estudiante) => {
-                db.query('INSERT INTO alumnos (nombre) VALUES (?)', [estudiante.nombre], (err, result) => {
-                    if (err) {
-                        console.error('Error al agregar alumno:', err);
-                        return;
-                    }
+                const grupoId = result.insertId; 
 
-                    const alumnoId = result.insertId;
-                    // Asignar el alumno al grupo
-                    db.query('INSERT INTO calificaciones (alumno_id, grupo_id) VALUES (?, ?)', 
-                        [alumnoId, grupoId], (err, result) => {
+                estudiantes.forEach((estudiante) => {
+                    db.query('INSERT INTO alumnos (nombre) VALUES (?)', [estudiante.nombre], (err, result) => {
                         if (err) {
-                            console.error('Error al asignar alumno al grupo:', err);
+                            console.error('Error al agregar alumno:', err);
+                            return;
                         }
+
+                        const alumnoId = result.insertId; 
+
+                        db.query('INSERT INTO grupo_alumnos (grupo_id, alumno_id) VALUES (?, ?)', 
+                            [grupoId, alumnoId], (err) => {
+                            if (err) {
+                                console.error('Error al asignar alumno al grupo:', err);
+                                return;
+                            }
+                        });
                     });
                 });
-            });
 
-            res.send('Grupo creado exitosamente con estudiantes asignados');
+                res.send('Grupo creado exitosamente con estudiantes asignados');
+            });
+        })
+        .catch(error => {
+            console.error('Error al obtener estudiantes:', error);
+            res.status(500).send('Error al obtener estudiantes desde la API externa');
         });
-    } catch (error) {
-        console.error('Error al obtener estudiantes:', error);
-        res.status(500).send('Error al obtener estudiantes desde la API externa');
-    }
 };
 
 exports.obtenerAlumnosDeGrupo = (req, res) => {
