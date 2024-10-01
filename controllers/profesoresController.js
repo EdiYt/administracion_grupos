@@ -20,17 +20,23 @@ exports.obtenerAlumnosDeProfesor = (req, res) => {
     const profesor = req.params.nombre;
 
     db.query(`
-        SELECT grupos.nombre AS grupoNombre, alumnos.nombre AS alumnoNombre
-        FROM grupos
-        JOIN grupo_alumnos ON grupos.id = grupo_alumnos.grupo_id
-        JOIN alumnos ON grupo_alumnos.alumno_id = alumnos.id
-        WHERE grupos.profesor = ?
+        SELECT DISTINCT a.id, a.nombre AS alumnoNombre, g.nombre AS grupoNombre
+        FROM alumnos a
+        JOIN grupo_alumnos ga ON a.id = ga.alumno_id
+        JOIN grupos g ON ga.grupo_id = g.id
+        WHERE g.profesor = ?
     `, [profesor], (err, results) => {
-        if (err) return res.status(500).send('Error al obtener los alumnos del profesor');
-        if (results.length === 0) return res.status(404).send('No se encontraron alumnos para este profesor');
+        if (err) {
+            console.error('Error al obtener los alumnos del profesor:', err);
+            return res.status(500).json({ error: 'Error al obtener los alumnos del profesor', details: err.message });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron alumnos para este profesor' });
+        }
         res.json(results);
     });
 };
+
 
 // Registrar calificaciones 
 exports.registrarCalificaciones = (req, res) => {
